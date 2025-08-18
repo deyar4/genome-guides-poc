@@ -1,17 +1,110 @@
 // src/app/page.tsx
 "use client"
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sun, Moon, Dna, Search, Activity, Book, Settings, Home, Database } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import GeneInfoPanel from "@/components/GeneInfoPanel";
+
+type GeneData = {
+  symbol: string;
+  name: string;
+  description: string;
+  chromosome: string;
+  start_position: number;
+  end_position: number;
+  strand: string;
+  gene_type: string;
+};
 
 export default function GenomeDashboard() {
   const { theme, setTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [gene, setGene] = useState('BRCA1');
-  const [location, setLocation] = useState('chr17:43,044,295-43,125,482');
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [gene, setGene] = useState("BRCA1");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<GeneData[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [geneData, setGeneData] = useState<GeneData | null>(null);
+  const [recentGenes, setRecentGenes] = useState<GeneData[]>([]);
+  const [allGenes, setAllGenes] = useState<GeneData[]>([]);
+  const [browserSearchQuery, setBrowserSearchQuery] = useState("");
+  const [filteredBrowserGenes, setFilteredBrowserGenes] = useState<GeneData[]>([]);
 
+
+  useEffect(() => {
+    const fetchAllGenes = async () => {
+      try {
+        const res = await fetch("/api/genes/all"); // Your backend endpoint returning all genes
+        const data = await res.json();
+        setAllGenes(data.results); // adjust based on your API response
+        setFilteredBrowserGenes(data.results);
+      } catch (err) {
+        console.error("Failed to fetch genes:", err);
+      }
+    };
+    fetchAllGenes();
+  }, []);
+
+
+const fetchGeneData = async (symbol: string) => {
+    try {
+      const response = await fetch(
+        `/api/genes/${encodeURIComponent(symbol)}`
+      );
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.detail || `HTTP error ${response.status}`);
+      }
+      const data = await response.json();
+      setGeneData(data);
+      setGene(data.symbol);
+
+      // Update recent genes
+      setRecentGenes((prev) => {
+        const exists = prev.find((g) => g.symbol === data.symbol);
+        if (exists) return prev;
+        return [data, ...prev].slice(0, 10);
+      });
+
+      setSearchResults([]);
+      setSearchQuery("");
+    } catch (error) {
+      console.error("Error fetching gene data:", error);
+      setGeneData(null);
+    }
+  };
+
+  // Search genes
+  const searchGenes = async (query: string) => {
+    if (!query) return setSearchResults([]);
+    setSearchLoading(true);
+    try {
+      const response = await fetch(
+        `/api/genes/search?q=${encodeURIComponent(query)}`
+      );
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.detail || `HTTP error ${response.status}`);
+      }
+      const data = await response.json();
+      setSearchResults(data.results || []);
+    } catch (error) {
+      console.error("Error searching genes:", error);
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  // Handle search submit
+  const handleSearchSubmit = () => {
+    if (searchQuery) fetchGeneData(searchQuery);
+  };
+
+  
+
+  // Sample genes data (will be replaced by backend)
   const genes = [
     { id: 'BRCA1', name: 'Breast Cancer Type 1', location: 'chr17:43,044,295-43,125,482', 
       description: 'Tumor suppressor gene involved in DNA repair. Mutations in BRCA1 increase the risk of breast and ovarian cancer.' },
@@ -21,7 +114,7 @@ export default function GenomeDashboard() {
       description: 'Encodes a chloride channel protein. Mutations cause cystic fibrosis, affecting lung and digestive system function.' },
   ];
 
-  const geneData = genes.find(g => g.id === gene);
+  // geneData = genes.find(g => g.id === gene);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
@@ -37,10 +130,44 @@ export default function GenomeDashboard() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              type="text"
-              placeholder="Search genes, regions, variants..."
+              type="search"
+              placeholder="Search..."
               className="pl-10 w-64"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit()}
             />
+            <Button 
+              size="sm"
+              variant="outline"
+              className="absolute right-1 top-1/2 -translate-y-1/2 z-10"
+              onClick={handleSearchSubmit}
+              disabled={searchLoading}
+            >
+              <Search className="h-4 w-4" />
+            </Button>
+            
+            {/* Search results dropdown */}
+            {searchResults.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+                <div className="py-2">
+                  {searchResults.map((result) => (
+                    <div 
+                      key={result.symbol}
+                      className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                      onClick={() => {
+                        setGene(result.symbol);
+                        setSearchResults([]);
+                        setSearchQuery('');
+                      }}
+                    >
+                      <div className="font-medium">{result.symbol}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-300">{result.name}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           
           <Button 
@@ -152,6 +279,9 @@ export default function GenomeDashboard() {
         <main className="flex-1 overflow-auto max-h-[calc(100vh-4rem)]">
           <div className="p-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+
+              
               {/* Genome Browser */}
               <div className="lg:col-span-2">
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border p-6">
@@ -191,7 +321,7 @@ export default function GenomeDashboard() {
                     
                     <div className="bg-gray-100 dark:bg-gray-700/50 rounded-xl p-4">
                       <div className="flex justify-between mb-2 text-sm">
-                        <span>{geneData?.location.split(':')[0]}</span>
+                        <span>{geneData?.location?.split(':')[0]}</span>
                         <span className="text-gray-500 dark:text-gray-400">Scale: 1Mbp</span>
                       </div>
                       
@@ -296,63 +426,7 @@ export default function GenomeDashboard() {
               <div className="space-y-6">
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border p-6">
                   <h2 className="text-xl font-semibold mb-4">Gene Information</h2>
-                  <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-lg p-4 mb-6">
-                    <div className="flex items-start gap-4">
-                      <div className="bg-blue-500 text-white rounded-lg p-2">
-                        <Dna className="h-6 w-6" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-bold">{gene}</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">{geneData?.name}</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Location</p>
-                      <p className="font-medium">{geneData?.location}</p>
-                    </div>
-                    
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Description</p>
-                      <p className="font-medium">{geneData?.description}</p>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Gene Type</p>
-                        <p className="font-medium">Protein Coding</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Strand</p>
-                        <p className="font-medium">Minus (-)</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Transcripts</p>
-                        <p className="font-medium">5</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Exons</p>
-                        <p className="font-medium">22</p>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Associated Diseases</p>
-                      <div className="flex flex-wrap gap-2">
-                        <span className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 rounded-full text-xs">
-                          Breast Cancer
-                        </span>
-                        <span className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 rounded-full text-xs">
-                          Ovarian Cancer
-                        </span>
-                        <span className="px-3 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 rounded-full text-xs">
-                          Prostate Cancer
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                  <GeneInfoPanel symbol={gene} />
                 </div>
 
                 {/* Recently Viewed Genes */}
