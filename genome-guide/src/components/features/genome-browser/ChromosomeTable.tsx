@@ -1,6 +1,6 @@
-"use client"; // This marks the component as a Client Component
-
-import { useEffect, useState } from "react";
+"use client";
+import { useEffect, useState, useMemo } from "react"; // 1. Import useMemo
+import { getChromosomes, Chromosome } from "@/services/genomeApi"; 
 import {
   Table,
   TableBody,
@@ -17,30 +17,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-// Define a TypeScript type for our chromosome data
-type Chromosome = {
-  id: number;
-  name: string;
-  length: number;
-};
-
 export function ChromosomeTable() {
-  // State to store the chromosome data we fetch from the API
   const [chromosomes, setChromosomes] = useState<Chromosome[]>([]);
-  // State to handle loading status
   const [isLoading, setIsLoading] = useState(true);
-  // State to handle any potential errors
   const [error, setError] = useState<string | null>(null);
 
-  // useEffect hook to fetch data when the component mounts
   useEffect(() => {
-    async function fetchChromosomes() {
+    async function loadData() {
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/v1/chromosomes/");
-        if (!response.ok) {
-          throw new Error("Failed to fetch data from the server.");
-        }
-        const data: Chromosome[] = await response.json();
+        const data = await getChromosomes();
         setChromosomes(data);
       } catch (err: any) {
         setError(err.message);
@@ -48,16 +33,21 @@ export function ChromosomeTable() {
         setIsLoading(false);
       }
     }
+    loadData();
+  }, []);
 
-    fetchChromosomes();
-  }, []); // The empty array means this effect runs only once on mount
+  // 2. Create a new, filtered list using useMemo
+  const filteredChromosomes = useMemo(() => {
+    // This keeps only the chromosomes that DO NOT include an underscore "_"
+    return chromosomes.filter(chromo => !chromo.name.includes('_'));
+  }, [chromosomes]); // This recalculates only when the 'chromosomes' state changes
 
   return (
-    <Card className="mt-8"> {/* Added margin-top for spacing */}
+    <Card>
       <CardHeader>
         <CardTitle>Available Chromosomes</CardTitle>
         <CardDescription>
-          A list of chromosomes retrieved from the Genome Guides API.
+          A list of primary chromosomes retrieved from the Genome Guides API.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -72,7 +62,8 @@ export function ChromosomeTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {chromosomes.map((chromo) => (
+              {/* 3. Map over the new 'filteredChromosomes' list */}
+              {filteredChromosomes.map((chromo) => (
                 <TableRow key={chromo.id}>
                   <TableCell className="font-medium">{chromo.name}</TableCell>
                   <TableCell className="text-right">

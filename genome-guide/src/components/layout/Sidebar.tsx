@@ -19,7 +19,7 @@ const navItems = [
 
 export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   return (
-    <aside className="w-64 bg-card border-r flex flex-col justify-between">
+    <aside className="w-64 bg-card flex flex-col justify-between">
       <nav className="p-4 space-y-1">
         {navItems.map((item) => (
           <Button

@@ -4,46 +4,80 @@ import { Input } from "@/components/ui/input";
 import { Sun, Moon, Dna, Search } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useState } from "react";
+import { searchGenes, Gene } from "@/services/genomeApi";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar"
 
-// In the future, this component will get the selected gene from props
-// and call a function to update the global state.
-export default function Header() {
+type HeaderProps = {
+  onGeneSelect: (geneSymbol: string) => void;
+};
+
+export default function Header({ onGeneSelect }: HeaderProps) {
   const { theme, setTheme } = useTheme();
   const [searchQuery, setSearchQuery] = useState("");
+  const [results, setResults] = useState<Gene[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSearchSubmit = () => {
-    if (!searchQuery) return;
-    // This logic will eventually be moved to a global state manager
-    alert(`Searching for gene: ${searchQuery}`);
+  const handleSearchChange = async (query: string) => {
+    setSearchQuery(query);
+    if (query.length < 2) {
+      setResults([]);
+      return;
+    }
+    setIsLoading(true);
+    const searchResults = await searchGenes(query);
+    setResults(searchResults);
+    setIsLoading(false);
+  };
+
+  const handleSelectGene = (gene: Gene) => {
+    if (gene.gene_name) {
+      onGeneSelect(gene.gene_name);
+      setSearchQuery("");
+      setResults([]);
+    }
   };
 
   return (
-    // We are using the exact styles from your original layout here
-    <header className="sticky top-0 z-50 bg-white dark:bg-gray-800 shadow-sm px-6 py-4 flex justify-between items-center">
-      
+    <header className="sticky top-0 z-50 bg-card px-6 py-4 flex justify-between items-center">
       {/* Left Side: Logo and App Name */}
       <div className="flex items-center gap-3">
-        <Dna className="h-7 w-7 text-blue-600 dark:text-blue-400" />
+        <Dna className="h-7 w-7 text-primary" />
         <h1 className="text-xl font-bold">Genome Guides</h1>
-        <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full">v-Alpha-1.0</span>
       </div>
       
-      {/* Right Side: Search, Theme, and User Info */}
-      <div className="flex items-center gap-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+      {/* Right Side: Search, Theme Toggle, and User Info */}
+      <div className="flex gap-6">
+        {/* Search Bar */}
+        <div className="relative right-35 w-180">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            type="search"
             placeholder="Search gene..."
-            className="pl-10 w-64"
+            className="pl-10 w-180"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit()}
+            onChange={(e) => handleSearchChange(e.target.value)}
           />
+          {results.length > 0 && (
+            <div className="absolute top-full w-full mt-1 bg-popover border rounded-md shadow-lg z-50">
+              {results.map((gene) => (
+                <div
+                  key={gene.id}
+                  className="px-4 py-2 hover:bg-accent cursor-pointer"
+                  onClick={() => handleSelectGene(gene)}
+                >
+                  <p className="font-medium">{gene.gene_name}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
+        {/* Theme Toggle Button */}
         <Button
-          variant="ghost" // Using ghost variant for a cleaner look
+          variant="ghost"
           size="icon"
           onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
         >
@@ -52,11 +86,14 @@ export default function Header() {
           <span className="sr-only">Toggle theme</span>
         </Button>
         
+        {/* User Info */}
         <div className="flex items-center gap-2">
-          <div className="bg-muted border-2 border-dashed rounded-full w-8 h-8" />
-          <div>
-            <p className="text-sm font-medium">Researcher</p>
-            <p className="text-xs text-muted-foreground">user@genomeguide.org</p>
+      <Avatar>
+        <AvatarImage src="https://avatars.githubusercontent.com/u/6730450?v=4" alt="@shadcn" />
+        <AvatarFallback>DA</AvatarFallback>
+      </Avatar>          <div>
+            <p className="text-sm font-medium">Dyar Amanalla</p>
+            <p className="text-xs text-muted-foreground">dyar@genomeguides.de</p>
           </div>
         </div>
       </div>

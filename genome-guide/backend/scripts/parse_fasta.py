@@ -7,16 +7,15 @@ from app.db.session import engine
 from app.models.chromosome import Base 
 
 # --- Configuration ---
-# The path to your FASTA file.
-# Since we placed it in the 'backend' directory, this path should work.
-FASTA_FILE_PATH = "chr22.fa"
+# The path to FASTA file.
+FASTA_FILE_PATH = "hg38.fa"
 
 def init_db():
     """
     Initializes the database and creates tables if they don't exist.
     """
     print("Initializing database and creating tables...")
-    # The magic line that creates the tables based on your models
+    #  creating the tables based on models
     Base.metadata.create_all(bind=engine)
     print("Database initialized.")
 
@@ -31,7 +30,7 @@ def parse_and_store_fasta():
     db: Session = SessionLocal()
 
     try:
-        # Use Biopython's SeqIO.parse to read the FASTA file
+        # Biopython's SeqIO.parse to read the FASTA file
         # This is memory-efficient as it reads one record at a time
         for record in SeqIO.parse(FASTA_FILE_PATH, "fasta"):
             chromosome_name = record.id

@@ -1,9 +1,31 @@
 "use client";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChromosomeTable } from "@/components/features/genome-browser/ChromosomeTable";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import ChromosomeVisualizer from "@/components/features/genome-browser/ChromosomeVisualizer";
+import { getGeneByName, Gene } from "@/services/genomeApi";
+import { Skeleton } from "../ui/skeleton";
 
-export default function GenomeBrowserView() {
+export default function GenomeBrowserView({ selectedGeneSymbol }: { selectedGeneSymbol: string | null }) {
+  const [geneData, setGeneData] = useState<Gene | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!selectedGeneSymbol) {
+      setGeneData(null);
+      return;
+    }
+    
+    const fetchData = async () => {
+      setIsLoading(true);
+      const data = await getGeneByName(selectedGeneSymbol);
+      setGeneData(data);
+      setIsLoading(false);
+    };
+
+    fetchData();
+  }, [selectedGeneSymbol]);
+
   return (
     <div className="p-6">
       <Tabs defaultValue="chromosome-list" className="w-full">
@@ -13,14 +35,12 @@ export default function GenomeBrowserView() {
         </TabsList>
 
         <TabsContent value="detailed-view">
-          <Card>
-            <CardHeader>
-              <CardTitle>Detailed Gene Visualization</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">The interactive gene and chromosome visualization will be built here.</p>
-            </CardContent>
-          </Card>
+          {isLoading && <Skeleton className="w-full h-48" />}
+          {geneData && geneData.chromosome ? (
+            <ChromosomeVisualizer gene={geneData} chromosome={geneData.chromosome} />
+          ) : (
+            !isLoading && <p className="text-center text-muted-foreground py-8">Select a gene to see its visualization.</p>
+          )}
         </TabsContent>
 
         <TabsContent value="chromosome-list">

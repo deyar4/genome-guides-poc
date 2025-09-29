@@ -11,5 +11,4 @@ class Chromosome(ChromosomeBase):
     id: int
 
     class Config:
-        # This is the line to change
         from_attributes = True

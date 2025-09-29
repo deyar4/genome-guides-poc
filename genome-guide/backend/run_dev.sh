@@ -5,8 +5,8 @@ set -euo pipefail
 
 python -m venv venv
 source venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
+# pip install --upgrade pip
+# pip install -r requirements.txt
 
 export PYTHONPATH=$(pwd)
 uvicorn app.main:app --reload --port 8000

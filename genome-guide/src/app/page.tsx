@@ -8,27 +8,25 @@ import ToolsView from '@/components/views/ToolsView';
 
 export default function GenomeDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [selectedGene, setSelectedGene] = useState<string | null>("BRCA1");
 
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <DashboardView />;
+        return <DashboardView selectedGeneSymbol={selectedGene} />;
       case 'browser':
-        return <GenomeBrowserView />;
+        return <GenomeBrowserView selectedGeneSymbol={selectedGene} />;
       case 'tools':
         return <ToolsView />;
       default:
-        return (
-          <div className="p-6">
-            <h1 className="text-2xl font-bold">{`${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`}</h1>
-          </div>
-        );
+        return <div className="p-6">...</div>;
     }
   };
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground">
-      <Header />
+      {/* 3. Pass the function to update the gene down to the Header */}
+      <Header onGeneSelect={setSelectedGene} />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
         <main className="flex-1 overflow-y-auto">
