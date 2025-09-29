@@ -1,32 +1,37 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware  # ADD THIS IMPORT
-from .database import engine, init_db
-from .models import Base
-from .api import genes, genome, variants
+from fastapi.middleware.cors import CORSMiddleware
 
-# Initialize database
-Base.metadata.create_all(bind=engine)
-init_db()
+from .db.session import engine
+from .models import chromosome
+from .api.api_v1 import api_router
+
+chromosome.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="Genome Guide API",
-    description="Backend for Genome Guide Bioinformatics Platform",
-    version="0.1.0"
+    title="Genome Guides API",
+    description="An API for browsing and searching human genome data.",
+    version="0.1.0",
 )
 
-# Add CORS middleware
+
+# --- CORS MIDDLEWARE ---
+# This allows frontend to make requests to your backend.
+origins = [
+    "http://localhost:3000",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# -----------------------------------------
 
-app.include_router(genes.router, prefix="/genes", tags=["genes"])
-app.include_router(genome.router, prefix="/genome", tags=["genome"])
-app.include_router(variants.router, prefix="/variants", tags=["variants"])
 
 @app.get("/")
-def root():
-    return {"message": "Genome Guide API is running"}
+def read_root():
+    return {"message": "Welcome to the Genome Guides API!"}
+
+app.include_router(api_router, prefix="/api/v1")
