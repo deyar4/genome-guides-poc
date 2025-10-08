@@ -5,6 +5,7 @@ import Sidebar from '@/components/layout/Sidebar';
 import DashboardView from '@/components/views/DashboardView';
 import GenomeBrowserView from '@/components/views/GenomeBrowserView';
 import ToolsView from '@/components/views/ToolsView';
+import DnaView from '@/components/views/DnaView';
 
 export default function GenomeDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -15,7 +16,7 @@ export default function GenomeDashboard() {
       case 'dashboard':
         return <DashboardView selectedGeneSymbol={selectedGene} />;
       case 'browser':
-        return <GenomeBrowserView selectedGeneSymbol={selectedGene} />;
+        return <DnaView />;
       case 'tools':
         return <ToolsView />;
       default:
