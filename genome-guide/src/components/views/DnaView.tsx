@@ -3,6 +3,10 @@ import { useState, useEffect } from "react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, Legend } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getChromosomes, Chromosome } from "@/services/genomeApi";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@radix-ui/react-tabs";
+import { Skeleton } from "../ui/skeleton";
+import ChromosomeVisualizer from "../features/genome-browser/ChromosomeVisualizer";
+import { ChromosomeTable } from "../features/genome-browser/ChromosomeTable";
 
 // New API function to get stats
 async function getStatistic(statName: string) {
@@ -11,6 +15,7 @@ async function getStatistic(statName: string) {
   const data = await response.json();
   return data.stat_value;
 }
+
 
 // A reusable Pie Chart component for base composition
 const CompositionPieChart = ({ statName, title }: { statName: string, title: string }) => {
@@ -56,7 +61,25 @@ const CompositionPieChart = ({ statName, title }: { statName: string, title: str
 }
 
 
-export default function DnaView() {
+export default function DnaView({ selectedGeneSymbol }: { selectedGeneSymbol: string | null }) {
+    const [geneData, setGeneData] = useState<Gene | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        if (!selectedGeneSymbol) {
+        setGeneData(null);
+        return;
+        }
+        
+        const fetchData = async () => {
+        setIsLoading(true);
+        const data = await getGeneByName(selectedGeneSymbol);
+        setGeneData(data);
+        setIsLoading(false);
+        };
+
+        fetchData();
+    }, [selectedGeneSymbol]);
   // ... (The state and useEffect for the chromosome bar chart can remain the same)
   
   return (
@@ -70,9 +93,8 @@ export default function DnaView() {
       </div>
 
       {/* The existing chromosome size chart */}
-      <Card>
-        {/* ... (The CardHeader and CardContent for the BarChart go here as before) ... */}
-      </Card>
+            <ChromosomeTable />
+
     </div>
   );
 }

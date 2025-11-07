@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useMemo } from "react"; // 1. Import useMemo
+import { useEffect, useState, useMemo } from "react";
 import { getChromosomes, Chromosome } from "@/services/genomeApi"; 
 import {
   Table,
@@ -36,11 +36,9 @@ export function ChromosomeTable() {
     loadData();
   }, []);
 
-  // 2. Create a new, filtered list using useMemo
   const filteredChromosomes = useMemo(() => {
-    // This keeps only the chromosomes that DO NOT include an underscore "_"
     return chromosomes.filter(chromo => !chromo.name.includes('_'));
-  }, [chromosomes]); // This recalculates only when the 'chromosomes' state changes
+  }, [chromosomes]);
 
   return (
     <Card>
@@ -54,25 +52,27 @@ export function ChromosomeTable() {
         {isLoading && <p>Loading data...</p>}
         {error && <p className="text-red-500">Error: {error}</p>}
         {!isLoading && !error && (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead className="text-right">Length (base pairs)</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {/* 3. Map over the new 'filteredChromosomes' list */}
-              {filteredChromosomes.map((chromo) => (
-                <TableRow key={chromo.id}>
-                  <TableCell className="font-medium">{chromo.name}</TableCell>
-                  <TableCell className="text-right">
-                    {chromo.length.toLocaleString()}
-                  </TableCell>
+          // 1. We wrap the table in a div with a fixed height and overflow
+          <div className="relative h-72 w-full overflow-auto">
+            <Table>
+              <TableHeader className="sticky top-0 bg-card">
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead className="text-right">Length (base pairs)</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredChromosomes.map((chromo) => (
+                  <TableRow key={chromo.id}>
+                    <TableCell className="font-medium">{chromo.name}</TableCell>
+                    <TableCell className="text-right">
+                      {chromo.length.toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </CardContent>
     </Card>

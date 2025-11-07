@@ -10,7 +10,7 @@ type SidebarProps = {
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: Home },
-  { id: 'browser', label: 'DNA & Chromosomes', icon: Dna },
+  { id: 'dna', label: 'DNA & Chromosomes', icon: Dna },
   { id: 'tools', label: 'Analysis Tools', icon: Activity },
   { id: 'data', label: 'Data Sources', icon: Database },
   { id: 'docs', label: 'Documentation', icon: Book },

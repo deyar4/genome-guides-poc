@@ -15,8 +15,8 @@ export default function GenomeDashboard() {
     switch (activeTab) {
       case 'dashboard':
         return <DashboardView selectedGeneSymbol={selectedGene} />;
-      case 'browser':
-        return <DnaView />;
+      case 'dna':
+        return <DnaView selectedGeneSymbol={selectedGene}/>;
       case 'tools':
         return <ToolsView />;
       default:
