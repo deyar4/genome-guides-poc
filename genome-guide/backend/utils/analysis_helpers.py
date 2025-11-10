@@ -10,7 +10,8 @@ def get_db_session() -> Session:
 def upsert_statistic(db: Session, name: str, value: dict):
     """Updates a statistic if it exists, or creates it if it doesn't."""
     existing_stat = db.query(GenomeStatistic).filter(GenomeStatistic.stat_name == name).first()
-    stat_value_json = json.loads(json.dumps(value)) # Ensure it's JSON serializable
+    # Ensure data is JSON-serializable (converts Counter to dict)
+    stat_value_json = json.loads(json.dumps(value))
 
     if existing_stat:
         existing_stat.stat_value = stat_value_json

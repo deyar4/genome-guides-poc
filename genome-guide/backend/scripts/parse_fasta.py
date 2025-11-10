@@ -1,17 +1,22 @@
 import os
 from Bio import SeqIO
 from sqlalchemy.orm import Session
+import json
 
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app.db.session import SessionLocal, engine
-from app.models.chromosome import Chromosome, Base
+# Import all models so Base knows about them all
+from app.models.chromosome import Chromosome
+from app.models.gene import Gene
+from app.models.statistic import GenomeStatistic, Base
 
-FASTA_FILE_PATH = "chr22.fa"
+FASTA_FILE_PATH = "hg38.fa" # Make sure this path is correct
 
 def load_fasta_to_db():
-    print("Initializing database and creating tables...")
+    print("Initializing database and creating all tables...")
+    # This creates all tables: chromosomes, genes, genome_stats
     Base.metadata.create_all(bind=engine)
     db: Session = SessionLocal()
     
@@ -26,7 +31,7 @@ def load_fasta_to_db():
                 new_chromosome = Chromosome(
                     name=record.id,
                     length=len(record.seq),
-                    sequence=str(record.seq) # Store the sequence
+                    sequence=str(record.seq.upper()) # Store the sequence
                 )
                 db.add(new_chromosome)
         
@@ -41,7 +46,6 @@ def load_fasta_to_db():
 
 if __name__ == "__main__":
     load_fasta_to_db()
-
 
 
 

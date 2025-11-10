@@ -18,8 +18,8 @@ def calculate_dinucleotide_frequency():
             print("No nuclear chromosome sequences found.")
             return
 
-        for (sequence,) in chromosomes: # Unpack the tuple
-             if sequence: # Ensure sequence is not None
+        for (sequence,) in chromosomes: # Unpacking the tuple
+             if sequence: # Ensuring sequence is not None
                 seq_upper = sequence.upper()
                 for i in range(len(seq_upper) - 1):
                     dinucleotide = seq_upper[i:i+2]

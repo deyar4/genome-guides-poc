@@ -31,7 +31,7 @@ export default function DashboardView({ selectedGeneSymbol }: { selectedGeneSymb
         {/* This is the "Hero" section, just like the shadcn homepage */}
         <div className="p-6 md:p-10 lg:p-16 border rounded-lg bg-card text-center">
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tighter">
-            An Interactive Guide to the Human Genome
+            Yo! Whatsapp
           </h1>
           <p className="mt-4 max-w-2xl mx-auto text-lg text-muted-foreground">
             Explore chromosomes, search for genes, and visualize genomic data in a clean, modern interface.
