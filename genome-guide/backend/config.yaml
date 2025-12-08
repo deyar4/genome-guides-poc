@@ -1,0 +1,5 @@
+
+genome: hg38
+
+fasta_file: "hg38.fa"
+gtf_file: "Homo_sapiens.GRCh38.115.chr.gtf"
