@@ -1,0 +1,55 @@
+Assuming unrestricted shared filesystem usage.
+host: archlinux
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 6
+Rules claiming more threads will be scaled down.
+Job stats:
+job               count
+--------------  -------
+all                   1
+load_sequences        1
+run_analysis          1
+total                 3
+
+Select jobs to execute...
+Execute 1 jobs...
+[Mon Dec  8 19:32:56 2025]
+localrule load_sequences:
+    input: hg38.fa, scripts/parse_fasta.py
+    output: genome_guides.db
+    jobid: 2
+    reason: Missing output files: genome_guides.db
+    resources: tmpdir=/tmp
+[Mon Dec  8 19:33:27 2025]
+Finished jobid: 2 (Rule: load_sequences)
+1 of 3 steps (33%) done
+Select jobs to execute...
+Execute 1 jobs...
+[Mon Dec  8 19:33:27 2025]
+localrule run_analysis:
+    input: genome_guides.db, analysis/calculate_gc_content.py, analysis/calculate_cpg_per_frequency.py, analysis/calculate_base_composition.py, analysis/calculate_dinucleotides.py, analysis/calculate_per_chromosome_composition.py
+    output: analysis/stats/gc_content_per_chromosome.done, analysis/stats/cpg_frequency_per_chromosome.done, analysis/stats/nuclear_base_composition.done, analysis/stats/dinucleotide_frequency.done, analysis/stats/per_chromosome_composition.done
+    jobid: 1
+    reason: Missing output files: analysis/stats/dinucleotide_frequency.done, analysis/stats/nuclear_base_composition.done, analysis/stats/gc_content_per_chromosome.done, analysis/stats/cpg_frequency_per_chromosome.done, analysis/stats/per_chromosome_composition.done; Input files updated by another job: genome_guides.db
+    resources: tmpdir=/tmp
+Touching output file analysis/stats/gc_content_per_chromosome.done.
+Touching output file analysis/stats/cpg_frequency_per_chromosome.done.
+Touching output file analysis/stats/nuclear_base_composition.done.
+Touching output file analysis/stats/dinucleotide_frequency.done.
+Touching output file analysis/stats/per_chromosome_composition.done.
+[Mon Dec  8 20:08:22 2025]
+Finished jobid: 1 (Rule: run_analysis)
+2 of 3 steps (67%) done
+Select jobs to execute...
+Execute 1 jobs...
+[Mon Dec  8 20:08:22 2025]
+localrule all:
+    input: analysis/stats/gc_content_per_chromosome.done, analysis/stats/cpg_frequency_per_chromosome.done, analysis/stats/nuclear_base_composition.done, analysis/stats/dinucleotide_frequency.done, analysis/stats/per_chromosome_composition.done
+    jobid: 0
+    reason: Rules with a run or shell declaration but no output are always executed.
+    resources: tmpdir=/tmp
+[Mon Dec  8 20:08:22 2025]
+Finished jobid: 0 (Rule: all)
+3 of 3 steps (100%) done
+Complete log(s): /home/dyar/Documents/projects/genome-guides-poc/genome-guide/backend/.snakemake/log/2025-12-08T193256.324611.snakemake.log

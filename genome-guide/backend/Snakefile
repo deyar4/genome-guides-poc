@@ -1,18 +1,17 @@
 # --- Snakefile ---
 
 # --- Configuration ---
-
 configfile: "config.yaml"
 
 # --- Target ---
-
 rule all:
     input:
         "analysis/stats/gc_content_per_chromosome.done",
         "analysis/stats/cpg_frequency_per_chromosome.done",
         "analysis/stats/nuclear_base_composition.done",
         "analysis/stats/dinucleotide_frequency.done",
-        "analysis/stats/per_chromosome_composition.done"
+        "analysis/stats/per_chromosome_composition.done",
+        "analysis/stats/ssr_statistics.done"
     shell:
         "echo 'Pipeline complete. All statistics are in genome_guides.db'"
 
@@ -28,34 +27,50 @@ rule load_sequences:
     shell:
         "python {input.script} && touch {output.db}"
 
-# Rule 2: Loading the gene annotations (depends on the DB existing)
+# Rule 2: Loading the gene annotations
 rule load_genes:
     input:
         gtf=config["gtf_file"],
         script="scripts/parse_gtf.py",
         db="genome_guides.db"
     output:
-        # We 'touch' the DB again to update its timestamp
-        touch("genome_guides.db")
+        touch("analysis/stats/genes_loaded.done")
     shell:
         "python {input.script}"
 
-# Rule 3: Running all our analysis scripts
-# This depends on the database being fully loaded
+# Rule 3: Loading the simple repeats (NEW)
+# We need this step so the SSR analysis has data to work with
+rule load_repeats:
+    input:
+        script="scripts/parse_repeats.py",
+        db="genome_guides.db"
+    output:
+        touch("analysis/stats/repeats_loaded.done")
+    shell:
+        "python {input.script}"
+
+# Rule 4: Running all analysis scripts
+# This now waits for sequences, genes, AND repeats to be loaded
 rule run_analysis:
     input:
         db="genome_guides.db",
+        # These dependencies ensure data loading happens first
+        genes_marker="analysis/stats/genes_loaded.done",
+        repeats_marker="analysis/stats/repeats_loaded.done",
+        # Scripts
         gc_script="analysis/calculate_gc_content.py",
-        cpg_script="analysis/calculate_cpg_per_frequency.py",
+        cpg_script="analysis/calculate_cpg_frequency.py", # Fixed filename typo here
         base_comp_script="analysis/calculate_base_composition.py",
         dinu_script="analysis/calculate_dinucleotides.py",
-        per_chromo_script="analysis/calculate_per_chromosome_composition.py"
+        per_chromo_script="analysis/calculate_per_chromosome_composition.py",
+        ssr_script="analysis/calculate_ssr_stats.py"
     output:
         touch("analysis/stats/gc_content_per_chromosome.done"),
         touch("analysis/stats/cpg_frequency_per_chromosome.done"),
         touch("analysis/stats/nuclear_base_composition.done"),
         touch("analysis/stats/dinucleotide_frequency.done"),
-        touch("analysis/stats/per_chromosome_composition.done")
+        touch("analysis/stats/per_chromosome_composition.done"),
+        touch("analysis/stats/ssr_statistics.done")
     shell:
         """
         python {input.gc_script}
@@ -63,9 +78,10 @@ rule run_analysis:
         python {input.base_comp_script}
         python {input.dinu_script}
         python {input.per_chromo_script}
+        python {input.ssr_script}
         """
 
 # --- Cleanup  ---
 rule clean:
     shell:
-        "rm -f genome_guides.db analysis/stats/*.done"
+        "rm -f analysis/stats/*.done"

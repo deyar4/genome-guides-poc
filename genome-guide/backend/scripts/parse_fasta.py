@@ -11,6 +11,8 @@ from app.db.session import SessionLocal, engine
 from app.models.chromosome import Chromosome
 from app.models.gene import Gene
 from app.models.statistic import GenomeStatistic, Base
+from app.models.repeat import SimpleRepeat
+from app.models.exon import Exon
 
 FASTA_FILE_PATH = "hg38.fa" # Make sure this path is correct
 

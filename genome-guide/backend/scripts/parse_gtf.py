@@ -1,15 +1,17 @@
 import pandas as pd
 from sqlalchemy.orm import Session
 import os
-
 import sys
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app.db.session import SessionLocal, engine
 from app.models.chromosome import Chromosome
-from app.models.gene import Gene, Base
+from app.models.gene import Gene
+from app.models.exon import Exon, Base
 
 GTF_FILE_PATH = "Homo_sapiens.GRCh38.115.chr.gtf"
+# We only need specific columns
 GTF_COLUMNS = ["seqname", "source", "feature", "start", "end", "score", "strand", "frame", "attribute"]
 
 def parse_and_store_gtf():
@@ -19,49 +21,104 @@ def parse_and_store_gtf():
     
     try:
         print(f"Reading GTF file: {GTF_FILE_PATH}")
-        df = pd.read_csv(GTF_FILE_PATH, sep='\t', comment='#', names=GTF_COLUMNS, low_memory=False)
+        # Read the file
+        df = pd.read_csv(
+            GTF_FILE_PATH, 
+            sep='\t', 
+            comment='#', 
+            names=GTF_COLUMNS, 
+            low_memory=False,
+            usecols=["seqname", "feature", "start", "end", "strand", "attribute"]
+        )
         
+        # --- PART 1: GENES ---
+        print("Processing Genes...")
         genes_df = df[df["feature"] == "gene"].copy()
-        print(f"Found {len(genes_df)} gene entries in file.")
-
-        print("Extracting attributes...")
-        # This .str.extract() method is more stable and avoids the numpy error
+        
+        # Extract attributes
         genes_df['gene_id'] = genes_df['attribute'].str.extract(r'gene_id "([^"]+)"')
         genes_df['gene_name'] = genes_df['attribute'].str.extract(r'gene_name "([^"]+)"')
+        genes_df['gene_type'] = genes_df['attribute'].str.extract(r'gene_biotype "([^"]+)"')
         genes_df.dropna(subset=["gene_id"], inplace=True)
-        
-        print("Checking for existing genes in the database...")
+
+        # Check existing genes to avoid duplicates
         existing_gene_ids = {g[0] for g in db.query(Gene.gene_id).all()}
-        print(f"Found {len(existing_gene_ids)} genes already in the database. Will only add new ones.")
-        
         chromosomes_map = {c.name: c.id for c in db.query(Chromosome).all()}
         
         genes_to_add = []
-        for index, row in genes_df.iterrows():
+        for _, row in genes_df.iterrows():
             if row["gene_id"] in existing_gene_ids:
                 continue
-
-            chromosome_name = "chr" + str(row["seqname"])
-            chromosome_id = chromosomes_map.get(chromosome_name)
-
-            if chromosome_id:
-                new_gene = Gene(
+            
+            chrom_name = "chr" + str(row["seqname"])
+            chrom_id = chromosomes_map.get(chrom_name)
+            
+            if chrom_id:
+                genes_to_add.append(Gene(
                     gene_id=row["gene_id"],
                     gene_name=row["gene_name"],
-                    chromosome_id=chromosome_id,
+                    gene_type=row["gene_type"],
+                    chromosome_id=chrom_id,
                     start_pos=row["start"],
                     end_pos=row["end"],
                     strand=row["strand"]
-                )
-                genes_to_add.append(new_gene)
+                ))
         
         if genes_to_add:
-            print(f"Adding {len(genes_to_add)} new genes to the database...")
+            print(f"Adding {len(genes_to_add)} new genes...")
             db.bulk_save_objects(genes_to_add)
             db.commit()
-            print("Successfully stored new genes.")
         else:
             print("No new genes to add.")
+
+        # --- PART 2: EXONS ---
+        print("Processing Exons...")
+        # Check if exons are already loaded to save time
+        if db.query(Exon).first():
+            print("Exons already appear to be loaded. Skipping to avoid duplicates.")
+            return
+
+        exons_df = df[df["feature"] == "exon"].copy()
+        print(f"Found {len(exons_df)} exons. Extracting attributes...")
+        
+        exons_df['gene_id'] = exons_df['attribute'].str.extract(r'gene_id "([^"]+)"')
+        exons_df['exon_number'] = exons_df['attribute'].str.extract(r'exon_number "(\d+)"')
+        exons_df.dropna(subset=["gene_id"], inplace=True)
+
+        # Prepare for bulk insert
+        print("Preparing exon data...")
+        exons_to_add = []
+        
+        # We need a set of valid gene_ids to ensure referential integrity
+        # (Exons can't point to a gene that doesn't exist in our DB)
+        valid_gene_ids = {g[0] for g in db.query(Gene.gene_id).all()}
+
+        count = 0
+        for _, row in exons_df.iterrows():
+            if row["gene_id"] not in valid_gene_ids:
+                continue
+
+            exons_to_add.append(Exon(
+                gene_id=row["gene_id"],
+                start_pos=row["start"],
+                end_pos=row["end"],
+                exon_number=int(row["exon_number"]) if pd.notna(row["exon_number"]) else None
+            ))
+            count += 1
+            
+            # Batch commit every 100k records to avoid memory issues
+            if len(exons_to_add) >= 50000:
+                print(f"Committing batch of 50,000 exons...")
+                db.bulk_save_objects(exons_to_add)
+                db.commit()
+                exons_to_add = []
+
+        # Commit remaining
+        if exons_to_add:
+            db.bulk_save_objects(exons_to_add)
+            db.commit()
+        
+        print(f"Successfully stored {count} exons.")
 
     except Exception as e:
         print(f"An error occurred: {e}")

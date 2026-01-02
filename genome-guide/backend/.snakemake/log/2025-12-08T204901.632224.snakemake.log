@@ -1,0 +1,24 @@
+Assuming unrestricted shared filesystem usage.
+host: archlinux
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Job stats:
+job      count
+-----  -------
+all          1
+total        1
+
+Select jobs to execute...
+Execute 1 jobs...
+[Mon Dec  8 20:49:01 2025]
+localrule all:
+    input: analysis/stats/gc_content_per_chromosome.done, analysis/stats/cpg_frequency_per_chromosome.done, analysis/stats/nuclear_base_composition.done, analysis/stats/dinucleotide_frequency.done, analysis/stats/per_chromosome_composition.done, analysis/stats/ssr_statistics.done
+    jobid: 0
+    reason: Rules with a run or shell declaration but no output are always executed.
+    resources: tmpdir=/tmp
+[Mon Dec  8 20:49:01 2025]
+Finished jobid: 0 (Rule: all)
+1 of 1 steps (100%) done
+Complete log(s): /home/dyar/Documents/projects/genome-guides-poc/genome-guide/backend/.snakemake/log/2025-12-08T204901.632224.snakemake.log

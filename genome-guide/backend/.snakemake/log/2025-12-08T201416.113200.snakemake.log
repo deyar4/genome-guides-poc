@@ -1,0 +1,43 @@
+Assuming unrestricted shared filesystem usage.
+host: archlinux
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Job stats:
+job             count
+------------  -------
+all                 1
+run_analysis        1
+total               2
+
+Select jobs to execute...
+Execute 1 jobs...
+[Mon Dec  8 20:14:16 2025]
+localrule run_analysis:
+    input: genome_guides.db, analysis/calculate_gc_content.py, analysis/calculate_cpg_per_frequency.py, analysis/calculate_base_composition.py, analysis/calculate_dinucleotides.py, analysis/calculate_per_chromosome_composition.py, analysis/calculate_ssr_stats.py
+    output: analysis/stats/gc_content_per_chromosome.done, analysis/stats/cpg_frequency_per_chromosome.done, analysis/stats/nuclear_base_composition.done, analysis/stats/dinucleotide_frequency.done, analysis/stats/per_chromosome_composition.done, analysis/stats/ssr_statistics.done
+    jobid: 1
+    reason: Missing output files: analysis/stats/dinucleotide_frequency.done, analysis/stats/nuclear_base_composition.done, analysis/stats/per_chromosome_composition.done, analysis/stats/gc_content_per_chromosome.done, analysis/stats/ssr_statistics.done, analysis/stats/cpg_frequency_per_chromosome.done
+    resources: tmpdir=/tmp
+Touching output file analysis/stats/gc_content_per_chromosome.done.
+Touching output file analysis/stats/cpg_frequency_per_chromosome.done.
+Touching output file analysis/stats/nuclear_base_composition.done.
+Touching output file analysis/stats/dinucleotide_frequency.done.
+Touching output file analysis/stats/per_chromosome_composition.done.
+Touching output file analysis/stats/ssr_statistics.done.
+[Mon Dec  8 20:47:12 2025]
+Finished jobid: 1 (Rule: run_analysis)
+1 of 2 steps (50%) done
+Select jobs to execute...
+Execute 1 jobs...
+[Mon Dec  8 20:47:12 2025]
+localrule all:
+    input: analysis/stats/gc_content_per_chromosome.done, analysis/stats/cpg_frequency_per_chromosome.done, analysis/stats/nuclear_base_composition.done, analysis/stats/dinucleotide_frequency.done, analysis/stats/per_chromosome_composition.done, analysis/stats/ssr_statistics.done
+    jobid: 0
+    reason: Rules with a run or shell declaration but no output are always executed.
+    resources: tmpdir=/tmp
+[Mon Dec  8 20:47:12 2025]
+Finished jobid: 0 (Rule: all)
+2 of 2 steps (100%) done
+Complete log(s): /home/dyar/Documents/projects/genome-guides-poc/genome-guide/backend/.snakemake/log/2025-12-08T201416.113200.snakemake.log
