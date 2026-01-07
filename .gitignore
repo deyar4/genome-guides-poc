@@ -52,3 +52,12 @@ uploads/
 !uploads/.keep
 tests/data/test_cpgIslandExt.txt
 benchmarks/
+
+# Local Docs, Reports and Changelogs
+GEMINI.md
+GEMiNI.pdf
+Genome_Guide_Report.ipynb
+update_report.py
+fix_notebook.py
+CHANGELOG.md
+CHANGELOG_FRONTEND.md
