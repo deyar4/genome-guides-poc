@@ -44,3 +44,5 @@ next-env.d.ts
 *.fa
 *.fasta
 *.gtf
+*.db
+genome-guide/backend/simpleRepeat.txt
