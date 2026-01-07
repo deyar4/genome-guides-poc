@@ -1,6 +1,0 @@
-Building DAG of jobs...
-MissingInputException in rule run_analysis in file /Users/deyar/Documents/projects/genome-guides-poc/genome-guide/backend/Snakefile, line 45:
-Missing input files for rule run_analysis:
-    output: analysis/stats/gc_content_per_chromosome.done, analysis/stats/cpg_frequency_per_chromosome.done, analysis/stats/nuclear_base_composition.done, analysis/stats/dinucleotide_frequency.done
-    affected files:
-        analysis/calculate_cpg_frequency.py

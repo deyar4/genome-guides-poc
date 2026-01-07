@@ -1,8 +1,0 @@
-Assuming unrestricted shared filesystem usage.
-host: archlinux
-Building DAG of jobs...
-MissingInputException in rule analyze_cpg in file "/home/dyar/Documents/projects/genome-guides-poc/genome-guide/backend/Snakefile", line 86:
-Missing input files for rule analyze_cpg:
-    output: analysis/stats/cpg_frequency_per_chromosome.done
-    affected files:
-        analysis/calculate_cpg_frequency.py
