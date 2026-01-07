@@ -2,7 +2,7 @@ import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
-    SQLALCHEMY_DATABASE_URL: str = "sqlite:///../genome_guides.db"
+    SQLALCHEMY_DATABASE_URL: str = "sqlite:///genome_guides.db"
     CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
     model_config = SettingsConfigDict(env_file=os.getenv("ENV_FILE", ".env"))
