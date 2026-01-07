@@ -1,12 +1,10 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 # We'll define a simple schema for the nested chromosome data
 class ChromosomeInGeneResponse(BaseModel):
     name: str
     length: int
-
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class GeneBase(BaseModel):
@@ -25,6 +23,4 @@ class Gene(GeneBase):
     # Instead of 'chromosome_id', we now expect a 'chromosome' object
     # that matches the shape of our new ChromosomeInGeneResponse schema
     chromosome: ChromosomeInGeneResponse
-
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

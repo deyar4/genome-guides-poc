@@ -2,13 +2,13 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from ... import schemas
+from ...schemas import gene as gene_schemas # Updated import
 from ...crud import crud_gene
 from ..dependencies import get_db
 
 router = APIRouter()
 
-@router.get("/search/{query}", response_model=List[schemas.gene.Gene])
+@router.get("/search/{query}", response_model=List[gene_schemas.Gene]) # Updated response_model
 def search_for_genes(query: str, db: Session = Depends(get_db)):
     """
     Search for genes by name (case-insensitive).
@@ -18,7 +18,7 @@ def search_for_genes(query: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="No genes found matching the query")
     return genes
 
-@router.get("/{gene_name}", response_model=schemas.gene.Gene)
+@router.get("/{gene_name}", response_model=gene_schemas.Gene) # Updated response_model
 def read_gene_by_name(gene_name: str, db: Session = Depends(get_db)):
     """
     Retrieve a single gene by its exact name.

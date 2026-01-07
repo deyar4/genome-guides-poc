@@ -1,8 +1,11 @@
 from fastapi import APIRouter
-from .endpoints import chromosomes, genes, statistics, genomes
+from .endpoints import chromosomes, genes, statistics, genomes, variants, centromeres, telomeres # Added telomeres
 
 api_router = APIRouter()
 api_router.include_router(chromosomes.router, prefix="/chromosomes", tags=["chromosomes"])
 api_router.include_router(genes.router, prefix="/genes", tags=["genes"])
 api_router.include_router(statistics.router, prefix="/statistics", tags=["statistics"])
 api_router.include_router(genomes.router, prefix="/genomes", tags=["genomes"])
+api_router.include_router(variants.router, prefix="/variants", tags=["variants"])
+api_router.include_router(centromeres.router, prefix="/centromeres", tags=["centromeres"])
+api_router.include_router(telomeres.router, prefix="/telomeres", tags=["telomeres"]) # Added telomeres router

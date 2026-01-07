@@ -1,5 +1,5 @@
-
+fasta_file: uploads/hg38.fa
 genome: hg38
-
-fasta_file: "hg38.fa"
-gtf_file: "Homo_sapiens.GRCh38.115.chr.gtf"
+gtf_file: uploads/Homo_sapiens.GRCh38.115.chr.gtf
+cpg_island_file: uploads/cpgIslandExt.txt
+rmsk_file: uploads/rmsk.txt

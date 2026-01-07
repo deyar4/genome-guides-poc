@@ -1,46 +1,59 @@
 from collections import Counter
-from sqlalchemy.orm import Session
-import json
 import sys, os
+import gc
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from app.db.session import SessionLocal
+from sqlalchemy.orm import Session
+import utils.analysis_helpers as analysis_helpers
 from app.models.chromosome import Chromosome
-from app.models.statistic import GenomeStatistic
-from scripts.parse_fasta import upsert_statistic # We can reuse our helper function
 
-def calculate_base_composition():
-    db: Session = SessionLocal()
-    print("Calculating base composition from sequences in the database...")
+def calculate_base_composition(db: Session = None):
     
-    nuclear_counts = Counter()
-    mitochondrial_counts = Counter()
-
-    try:
-        chromosomes = db.query(Chromosome).all()
-        if not chromosomes:
-            print("No chromosome sequences found in the database. Please run the FASTA parser first.")
-            return
-
-        for chrom in chromosomes:
-            base_counts = Counter(chrom.sequence.upper())
-            if chrom.name == "chrM":
-                mitochondrial_counts.update(base_counts)
-            else:
-                nuclear_counts.update(base_counts)
+    def _calculate(db_session: Session):
+        print("Calculating base composition from sequences in the database (Optimized)...")
         
-        # Upsert the results
-        upsert_statistic(db, "nuclear_base_composition", json.loads(json.dumps(dict(nuclear_counts))))
-        upsert_statistic(db, "mitochondrial_base_composition", json.loads(json.dumps(dict(mitochondrial_counts))))
-        
-        db.commit()
-        print("Successfully calculated and stored base composition.")
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        db.rollback()
-    finally:
-        db.close()
+        nuclear_counts = Counter()
+        mitochondrial_counts = Counter()
+
+        try:
+            chrom_ids = db_session.query(Chromosome.id, Chromosome.name).all()
+            
+            for chrom_id, name in chrom_ids:
+                if "_" in name and name != "chrM": # Skip random contigs to speed up
+                    continue
+                
+                sequence = db_session.query(Chromosome.sequence).filter(Chromosome.id == chrom_id).scalar()
+                
+                if not sequence:
+                    continue
+                
+                # Optimized: Counter on full string
+                base_counts = Counter(sequence.upper())
+                del sequence # Free memory immediately
+                
+                if name == "chrM":
+                    mitochondrial_counts.update(base_counts)
+                else:
+                    nuclear_counts.update(base_counts)
+                
+                print(f"  Processed {name}")
+                del base_counts
+                gc.collect()
+            
+            analysis_helpers.upsert_statistic(db_session, "nuclear_base_composition", dict(nuclear_counts))
+            analysis_helpers.upsert_statistic(db_session, "mitochondrial_base_composition", dict(mitochondrial_counts))
+            
+            print("Successfully calculated and stored base composition.")
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            raise
+
+    if db:
+        _calculate(db)
+    else:
+        with analysis_helpers.get_db_session() as session:
+            _calculate(session)
 
 if __name__ == "__main__":
     calculate_base_composition()

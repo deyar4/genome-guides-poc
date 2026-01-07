@@ -1,39 +1,43 @@
+import sys
+import os
+import multiprocessing
 from collections import Counter
-import sys, os
+from sqlalchemy.orm import Session
 
+# Add the backend directory to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from utils.analysis_helpers import get_db_session, upsert_statistic
+import utils.analysis_helpers as analysis_helpers
 from app.models.chromosome import Chromosome
+from analysis.parallel_utils import dinucleotide_worker
 
-def calculate_dinucleotide_frequency():
-    db = get_db_session()
-    print("Calculating dinucleotide frequencies from database sequences...")
-    
-    dinucleotide_counts = Counter()
-
-    try:
-        chromosomes = db.query(Chromosome.sequence).filter(Chromosome.name != "chrM").all()
-        if not chromosomes:
-            print("No nuclear chromosome sequences found.")
-            return
-
-        for (sequence,) in chromosomes: # Unpacking the tuple
-             if sequence: # Ensuring sequence is not None
-                seq_upper = sequence.upper()
-                for i in range(len(seq_upper) - 1):
-                    dinucleotide = seq_upper[i:i+2]
-                    if 'N' not in dinucleotide:
-                        dinucleotide_counts[dinucleotide] += 1
+def calculate_dinucleotide_frequency(db: Session = None):
+    def _calculate(db_session: Session):
+        print("Calculating dinucleotide frequency (Parallel Optimized)...")
         
-        upsert_statistic(db, "dinucleotide_frequency", dict(dinucleotide_counts))
+        # Fetch IDs (Filtering out 'chrM' if needed, though worker handles logic)
+        chrom_ids = [c.id for c in db_session.query(Chromosome.id).filter(Chromosome.name != "chrM").all()]
+        
+        pool_size = min(len(chrom_ids), multiprocessing.cpu_count())
+        final_counts = Counter()
+        
+        print(f"  Spawning {pool_size} worker processes...")
+        with multiprocessing.Pool(pool_size) as pool:
+            results = pool.map(dinucleotide_worker, chrom_ids)
+            
+            for res in results:
+                if res:
+                    final_counts.update(res)
+
+        analysis_helpers.upsert_statistic(db_session, "dinucleotide_frequency", dict(final_counts))
         print("Successfully calculated and stored dinucleotide frequencies.")
 
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        db.rollback()
-    finally:
-        db.close()
+    if db:
+        _calculate(db)
+    else:
+        with analysis_helpers.get_db_session() as session:
+            _calculate(session)
 
 if __name__ == "__main__":
+    multiprocessing.set_start_method("spawn", force=True)
     calculate_dinucleotide_frequency()

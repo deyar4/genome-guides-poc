@@ -1,59 +1,50 @@
-import sys, os
-from collections import Counter
+import sys
+import os
+import multiprocessing
+from sqlalchemy.orm import Session
 
-# Add the parent directory to the Python path
+# Add the backend directory to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from utils.analysis_helpers import get_db_session, upsert_statistic
+import utils.analysis_helpers as analysis_helpers
 from app.models.chromosome import Chromosome
+from analysis.parallel_utils import cpg_worker
 
-def calculate_cpg_frequency_per_chromosome():
-    db = get_db_session()
-    print("Calculating CpG dinucleotide frequency for each chromosome...")
-    
-    cpg_frequency_results = {}
-
-    try:
-        # --- THIS IS THE CORRECTED QUERY ---
-        # We fetch all chromosomes and filter in Python, just like the other scripts
-        chromosomes = db.query(Chromosome.name, Chromosome.sequence).all()
-        # ------------------------------------
+def calculate_cpg_frequency_per_chromosome(db: Session = None):
+    def _calculate(db_session: Session):
+        print("Calculating CpG dinucleotide frequency (Parallel Optimized)...")
         
-        if not chromosomes:
-            print("No chromosome sequences found. This should not happen if parse_fasta ran.")
-            return
+        # Fetch IDs only
+        chrom_ids = [c.id for c in db_session.query(Chromosome.id).filter(Chromosome.name != "chrM").all()] # Exclude chrM if special handling needed, or include. worker handles it.
+        # Usually chrM is small, let's include all.
+        chrom_ids = [c.id for c in db_session.query(Chromosome.id).all()]
 
-        for name, sequence in chromosomes:
-            # We add the filter here in Python, which is more reliable
-            if not sequence or "_" in name:
-                continue
-
-            seq_upper = sequence.upper()
-            cpg_count = 0
-            total_dinucleotides = 0
+        # Use Pool
+        # Number of processes = CPU count (usually 4-8 on dev machines)
+        pool_size = min(len(chrom_ids), multiprocessing.cpu_count())
+        
+        cpg_frequency_results = {}
+        
+        print(f"  Spawning {pool_size} worker processes...")
+        with multiprocessing.Pool(pool_size) as pool:
+            results = pool.map(cpg_worker, chrom_ids)
             
-            for i in range(len(seq_upper) - 1):
-                dinucleotide = seq_upper[i:i+2]
-                if 'N' in dinucleotide:
-                    continue
-                
-                if dinucleotide == 'CG':
-                    cpg_count += 1
-                
-                total_dinucleotides += 1
+            for res in results:
+                if res:
+                    name, percentage = res
+                    cpg_frequency_results[name] = percentage
+                    print(f"  {name}: {percentage:.4f}%")
 
-            if total_dinucleotides > 0:
-                cpg_percentage = (cpg_count / total_dinucleotides) * 100
-                cpg_frequency_results[name] = round(cpg_percentage, 4)
-        
-        upsert_statistic(db, "cpg_frequency_per_chromosome", cpg_frequency_results)
+        analysis_helpers.upsert_statistic(db_session, "cpg_frequency_per_chromosome", cpg_frequency_results)
         print("Successfully calculated and stored CpG frequency per chromosome.")
 
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        db.rollback()
-    finally:
-        db.close()
+    if db:
+        _calculate(db)
+    else:
+        with analysis_helpers.get_db_session() as session:
+            _calculate(session)
 
 if __name__ == "__main__":
+    # Multiprocessing needs this on Windows/MacOS
+    multiprocessing.set_start_method("spawn", force=True)
     calculate_cpg_frequency_per_chromosome()

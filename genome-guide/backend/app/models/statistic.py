@@ -1,5 +1,5 @@
-from sqlalchemy import Column, Integer, String, JSON
-from ..db.session import Base
+from sqlalchemy import Column, Integer, String, Text, JSON
+from ..db.base_class import Base
 
 class GenomeStatistic(Base):
     __tablename__ = "genome_stats"

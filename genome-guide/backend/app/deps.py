@@ -3,10 +3,11 @@ from __future__ import annotations
 from contextlib import contextmanager
 from typing import Iterator
 
-from .database import SessionLocal
+from .db.session import get_session_local
 
 @contextmanager
 def session_scope() -> Iterator:
+    SessionLocal = get_session_local()
     db = SessionLocal()
     try:
         yield db
@@ -20,6 +21,7 @@ def session_scope() -> Iterator:
 # FastAPI dependency
 
 def get_db():
+    SessionLocal = get_session_local()
     db = SessionLocal()
     try:
         yield db
